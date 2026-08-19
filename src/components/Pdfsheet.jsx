@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import dayjs from "dayjs";
-import xyron from "../assets/Xyron_logo.jpeg";
+import watermark from "../assets/Sri_Image.jpg";
 import "./pdfSheet.css";
 
 /**
@@ -24,7 +24,7 @@ const PdfSheet = forwardRef(function PdfSheet({ data }, ref) {
 
   return (
     <div className="psheet" ref={ref}>
-      <img src={xyron} alt="" className="psheet-watermark" />
+      <img src={watermark} alt="" className="psheet-watermark" />
 
       <div className="psheet-content">
         <div className="psheet-header">
@@ -50,7 +50,7 @@ const PdfSheet = forwardRef(function PdfSheet({ data }, ref) {
             </div>
           </div>
           <div className="psheet-header-right">
-            <div className="psheet-title">XYRON WEB TECH</div>
+            <div className="psheet-title">SRI VENKATESWARA STORES</div>
             <div className="psheet-sub-title">INVOICE</div>
             <div className="psheet-meta">{dayjs().format("DD/MM/YYYY")}</div>
           </div>

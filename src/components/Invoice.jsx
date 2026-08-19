@@ -1,25 +1,23 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import {
-  Input,
   Button,
   DatePicker,
-  Row,
-  Col,
-  Card,
-  Divider,
-  Typography,
+  Input,
   InputNumber,
+  Modal,
   Space,
-  Popconfirm,
-  message,
 } from "antd";
-import { PlusOutlined, DeleteOutlined, DownloadOutlined, PrinterOutlined, ExclamationCircleFilled } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  PlusOutlined,
+  PrinterOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import html2pdf from "html2pdf.js";
 import "./Invoice.css";
 import WATERMARK_SRC from "../assets/Sri_Image.jpg";
-
-const { Title, Text } = Typography;
 
 const BUSINESS = {
   name: "Sri Venkateswara Stores",
@@ -27,302 +25,493 @@ const BUSINESS = {
   phone: "99522 22018",
 };
 
-let idCounter = 1;
-const newItem = () => ({ id: idCounter++, item: "", qty: 0, price: 0 });
+const DEFAULT_TERMS = [
+  "Good Once sold will not be taken back",
+  "Interest @ 24% p.a. will be charged if the payment is not made with in the stipulated time.",
+  'Subject to "Vellore" Jurisdiction only',
+  "Payment should be made by NEFT / RTGS / Cheque",
+];
+
+let itemId = 1;
+
+const createItem = () => ({
+  id: itemId++,
+  item: "",
+  qty: 1,
+  price: 0,
+});
+
+const formatAmount = (value) =>
+  Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
 export default function Invoice() {
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(dayjs());
-  const [invoiceNo] = useState(() => Math.floor(1000 + Math.random() * 9000));
-  const [items, setItems] = useState([newItem(), newItem()]);
-  const [touched, setTouched] = useState({});
-  const [discount, setDiscount] = useState(0);
   const printRef = useRef(null);
 
-  const markTouched = (id, field) =>
-    setTouched((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], [field]: true },
-    }));
+  const [customer, setCustomer] = useState({
+    name: "",
+    mobile: "",
+    date: dayjs(),
+  });
 
-  const getError = (it, field) => {
-    if (!touched[it.id]?.[field]) return "";
-    if (field === "item") {
-      return it.item.trim() === "" ? "Enter item name" : "";
-    }
-    if (field === "qty") {
-      return !it.qty || Number(it.qty) <= 0 ? "Enter valid quantity" : "";
-    }
-    if (field === "price") {
-      return it.price === null || it.price === undefined || Number(it.price) < 0
-        ? "Enter valid price"
-        : "";
-    }
-    return "";
+  const [items, setItems] = useState([]);
+  const [cgst, setCgst] = useState(0);
+  const [sgst, setSgst] = useState(0);
+  const [igst, setIgst] = useState(0);
+  const [terms, setTerms] = useState(DEFAULT_TERMS.join("\n"));
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [itemOpen, setItemOpen] = useState(false);
+  const [draftItem, setDraftItem] = useState(createItem);
+
+  const lineTotal = (item) =>
+    Number(item.qty || 0) * Number(item.price || 0);
+
+  const subtotal = items.reduce(
+    (sum, item) => sum + lineTotal(item),
+    0
+  );
+
+  const cgstAmount = subtotal * (Number(cgst) / 100);
+  const sgstAmount = subtotal * (Number(sgst) / 100);
+  const igstAmount = subtotal * (Number(igst) / 100);
+
+  const total =
+    subtotal + cgstAmount + sgstAmount + igstAmount;
+
+  const saveItem = () => {
+    const name = draftItem.item.trim();
+
+    if (!name || Number(draftItem.qty) <= 0) return;
+
+    setItems((current) => [
+      ...current,
+      {
+        ...draftItem,
+        item: name,
+      },
+    ]);
+
+    setDraftItem(createItem());
+    setItemOpen(false);
   };
 
-  const updateItem = (id, field, value) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, [field]: value } : it))
+  const removeItem = (id) => {
+    setItems((current) =>
+      current.filter((item) => item.id !== id)
     );
   };
 
-  const addItem = () => setItems((prev) => [...prev, newItem()]);
-  const removeItem = (id) =>
-    setItems((prev) => (prev.length > 1 ? prev.filter((it) => it.id !== id) : prev));
+  const waitForFonts = async () => {
+    if (!document.fonts) return;
 
-  const validateAllItems = () => {
-    const allTouched = {};
-    let valid = true;
-    items.forEach((it) => {
-      allTouched[it.id] = { item: true, qty: true, price: true };
-      if (
-        it.item.trim() === "" ||
-        !it.qty ||
-        Number(it.qty) <= 0 ||
-        it.price === null ||
-        it.price === undefined ||
-        Number(it.price) < 0
-      ) {
-        valid = false;
-      }
+    await Promise.all([
+      document.fonts.load('400 14px "Poppins"'),
+      document.fonts.load('500 14px "Poppins"'),
+      document.fonts.load('600 14px "Poppins"'),
+      document.fonts.load('700 14px "Poppins"'),
+    ]);
+
+    await document.fonts.ready;
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!printRef.current) return;
+
+    const deleteButtons =
+      printRef.current.querySelectorAll(".delete-item");
+
+    deleteButtons.forEach((button) => {
+      button.style.display = "none";
     });
-    setTouched(allTouched);
-    if (!valid) {
-      message.error("Fix the highlighted item fields before continuing.");
+
+    try {
+      await waitForFonts();
+
+      await new Promise((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(resolve)
+        )
+      );
+
+      await html2pdf()
+        .set({
+          margin: 0.25,
+          filename: `invoice-${dayjs().format(
+            "DDMMYYYY-HHmm"
+          )}.pdf`,
+          image: {
+            type: "jpeg",
+            quality: 0.98,
+          },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            letterRendering: true,
+          },
+          jsPDF: {
+            unit: "in",
+            format: "a4",
+            orientation: "portrait",
+          },
+        })
+        .from(printRef.current)
+        .save();
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+    } finally {
+      deleteButtons.forEach((button) => {
+        button.style.display = "";
+      });
     }
-    return valid;
   };
-
-  const lineTotal = (it) => (Number(it.qty) || 0) * (Number(it.price) || 0);
-  const subtotal = items.reduce((sum, it) => sum + lineTotal(it), 0);
-  const discountAmount = subtotal * ((Number(discount) || 0) / 100);
-  const total = subtotal - discountAmount;
-
-  const fmt = (n) =>
-    Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
-
-  const handlePrint = () => {
-    if (!validateAllItems()) return;
-    window.print();
-  };
-
-  const handleDownloadPdf = () => {
-    if (!validateAllItems()) return;
-    const element = printRef.current;
-    const opt = {
-      margin: 0.3,
-      filename: `invoice-${invoiceNo}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
-    };
-    html2pdf().set(opt).from(element).save();
-  };
-
-  const initials = BUSINESS.name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("");
 
   return (
     <div className="invoice-page">
-      <div className="invoice-wrapper" ref={printRef}>
-        <Card className="invoice-card" bordered={false}>
-          <div className="invoice-watermark">
-            <img src={WATERMARK_SRC} alt="" />
-          </div>
-          <div className="invoice-content">
-          {/* Header */}
-          <div className="invoice-header">
-            <div className="invoice-header-left">
-              <div className="invoice-badge">{initials}</div>
-              <div>
-                <Title level={4} className="invoice-business-name">
-                  {BUSINESS.name}
-                </Title>
-                <Text className="invoice-muted">{BUSINESS.address}</Text>
-                <br />
-                <Text className="invoice-muted">Ph: {BUSINESS.phone}</Text>
-              </div>
-            </div>
-            <div className="invoice-header-right">
-              <Title level={3} className="invoice-title-tag">
-                INVOICE
-              </Title>
-              <Text className="invoice-muted">
-                {invoiceDate ? invoiceDate.format("DD/MM/YYYY") : ""}
-              </Text>
-              <br />
-              <Text className="invoice-muted invoice-customer-tag">
-                {customerName ? customerName : "Customer name"}
-              </Text>
-            </div>
-          </div>
+      <div className="invoice-wrapper">
 
-          <Divider className="invoice-divider" />
-
-          {/* Customer + date */}
-          <Row gutter={16} className="invoice-meta-row">
-            <Col xs={24} sm={8}>
-              <Text className="invoice-label">Customer name</Text>
-              <Input
-                placeholder="Name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-            </Col>
-            <Col xs={24} sm={8}>
-              <Text className="invoice-label">Email</Text>
-              <Input
-                placeholder="Email"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-              />
-            </Col>
-            <Col xs={24} sm={8}>
-              <Text className="invoice-label">Date</Text>
-              <DatePicker
-                className="invoice-date-picker"
-                value={invoiceDate}
-                onChange={(d) => setInvoiceDate(d)}
-                format="DD/MM/YYYY"
-              />
-            </Col>
-          </Row>
-
-          {/* Items table */}
-          <div className="invoice-table-wrap">
-            <div className="invoice-table-head">
-              <span className="col-item">Item</span>
-              <span className="col-qty">Quantity</span>
-              <span className="col-price">Price</span>
-              <span className="col-amount">Amount</span>
-              <span className="col-action" />
-            </div>
-            {items.map((it) => (
-              <div className="invoice-table-row" key={it.id}>
-                <span className="col-item">
-                  <span className="mobile-label">Item</span>
-                  <Input
-                    placeholder="Item name"
-                    value={it.item}
-                    status={getError(it, "item") ? "error" : ""}
-                    onChange={(e) => updateItem(it.id, "item", e.target.value)}
-                    onBlur={() => markTouched(it.id, "item")}
-                  />
-                  {getError(it, "item") && (
-                    <div className="field-error">{getError(it, "item")}</div>
-                  )}
-                </span>
-                <span className="col-qty">
-                  <span className="mobile-label">Quantity</span>
-                  <InputNumber
-                    min={0}
-                    placeholder="Quantity"
-                    value={it.qty}
-                    status={getError(it, "qty") ? "error" : ""}
-                    onChange={(v) => updateItem(it.id, "qty", v)}
-                    onBlur={() => markTouched(it.id, "qty")}
-                    style={{ width: "100%" }}
-                  />
-                  {getError(it, "qty") && (
-                    <div className="field-error">{getError(it, "qty")}</div>
-                  )}
-                </span>
-                <span className="col-price">
-                  <span className="mobile-label">Price</span>
-                  <InputNumber
-                    min={0}
-                    value={it.price}
-                    status={getError(it, "price") ? "error" : ""}
-                    onChange={(v) => updateItem(it.id, "price", v)}
-                    onBlur={() => markTouched(it.id, "price")}
-                    style={{ width: "100%" }}
-                  />
-                  {getError(it, "price") && (
-                    <div className="field-error">{getError(it, "price")}</div>
-                  )}
-                </span>
-                <span className="col-amount">
-                  <span className="mobile-label">Amount</span>
-                  Rs. {fmt(lineTotal(it))}
-                </span>
-                <span className="col-action">
-                  <Popconfirm
-                    title="Delete this item?"
-                    description="Are you sure you want to delete this line item?"
-                    icon={<ExclamationCircleFilled style={{ color: "#ef4444" }} />}
-                    okText="Delete"
-                    cancelText="Cancel"
-                    okButtonProps={{ danger: true }}
-                    onConfirm={() => removeItem(it.id)}
-                  >
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      className="invoice-remove-btn"
-                    />
-                  </Popconfirm>
-                </span>
-              </div>
-            ))}
-          </div>
+        <div className="invoice-editor no-print">
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => setDetailsOpen(true)}
+          >
+            Invoice details
+          </Button>
 
           <Button
-            type="dashed"
+            type="primary"
             icon={<PlusOutlined />}
-            onClick={addItem}
-            className="invoice-add-btn"
+            onClick={() => setItemOpen(true)}
           >
             Add item
           </Button>
+        </div>
 
-          {/* Totals */}
-          <div className="invoice-totals">
-            <div className="invoice-totals-row">
-              <Text className="invoice-muted">Subtotal</Text>
-              <Text>Rs. {fmt(subtotal)}</Text>
-            </div>
+        <main className="invoice-card" ref={printRef}>
+          <div className="invoice-watermark">
+            <img src={WATERMARK_SRC} alt="" />
+          </div>
 
-            <div className="invoice-discount-row">
-              <div className="invoice-discount-input">
-                <span>Discount</span>
-                <InputNumber
-                  min={0}
-                  max={100}
-                  value={discount}
-                  onChange={(v) => setDiscount(v || 0)}
-                  style={{ width: 70 }}
-                  suffix="%"
-                  size="small"
-                />
+          <div className="invoice-content">
+
+            <header className="invoice-header">
+              <div>
+                <h1>{BUSINESS.name}</h1>
+                <p>{BUSINESS.address}</p>
+                <p>Ph: {BUSINESS.phone}</p>
               </div>
-              <span>- Rs. {fmt(discountAmount)}</span>
-            </div>
+            </header>
 
-            <div className="invoice-total-final">
-              <Text className="invoice-total-label">Total</Text>
-              <Text className="invoice-total-value">Rs. {fmt(total)}</Text>
-            </div>
+            <section className="bill-details">
+              <div>
+                <label>Bill To</label>
+
+                <b>
+                  {customer.name || "Customer"}
+                </b>
+
+                {customer.mobile && (
+                  <span>
+                    Mobile: {customer.mobile}
+                  </span>
+                )}
+              </div>
+
+              <div className="bill-date">
+                <label>Invoice Date</label>
+                <b>
+                  {customer.date?.format("DD MMM YYYY")}
+                </b>
+              </div>
+            </section>
+
+            <section className="items-section">
+              <h2>Item Details</h2>
+
+              <div className="invoice-table">
+                <div className="invoice-table-head">
+                  <span>#</span>
+                  <span>Item Description</span>
+                  <span>Qty</span>
+                  <span>Rate</span>
+                  <span>Amount</span>
+                  <span className="no-print" />
+                </div>
+
+                {items.length ? (
+                  items.map((item, index) => (
+                    <div
+                      className="invoice-table-row"
+                      key={item.id}
+                    >
+                      <span>{index + 1}</span>
+
+                      <span className="item-name">
+                        {item.item}
+                      </span>
+
+                      <span className="text-right">
+                        {item.qty}
+                      </span>
+
+                      <span className="text-right">
+                        ₹ {formatAmount(item.price)}
+                      </span>
+
+                      <span className="text-right">
+                        ₹ {formatAmount(lineTotal(item))}
+                      </span>
+
+                      <button
+                        type="button"
+                        className="delete-item no-print"
+                        onClick={() => removeItem(item.id)}
+                        aria-label={`Remove ${item.item}`}
+                      >
+                        <DeleteOutlined />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="invoice-empty">
+                    No items added
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="amount-section">
+              <h2>Amount Details</h2>
+
+              <div className="amount-card">
+                <div>
+                  <span>Subtotal</span>
+                  <b>₹ {formatAmount(subtotal)}</b>
+                </div>
+
+                <div>
+                  <span>CGST ({cgst}%)</span>
+                  <b>₹ {formatAmount(cgstAmount)}</b>
+                </div>
+
+                <div>
+                  <span>SGST ({sgst}%)</span>
+                  <b>₹ {formatAmount(sgstAmount)}</b>
+                </div>
+
+                <div>
+                  <span>IGST ({igst}%)</span>
+                  <b>₹ {formatAmount(igstAmount)}</b>
+                </div>
+
+                <div className="grand-total">
+                  <span>Total</span>
+                  <b>₹ {formatAmount(total)}</b>
+                </div>
+              </div>
+            </section>
+
+            <footer className="invoice-footer">
+              <div className="terms-card">
+                <div className="terms-title">
+                  Terms &amp; Conditions
+                </div>
+
+                <ol>
+                  {terms
+                    .split("\n")
+                    .filter((term) => term.trim())
+                    .map((term, index) => (
+                      <li key={index}>
+                        {term.trim()}
+                      </li>
+                    ))}
+                </ol>
+              </div>
+            </footer>
+
           </div>
+        </main>
+
+        <Space className="invoice-actions no-print">
+          <Button
+            icon={<PrinterOutlined />}
+            onClick={() => window.print()}
+          >
+            Print
+          </Button>
+
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={handleDownloadPdf}
+          >
+            Download PDF
+          </Button>
+        </Space>
+
+        <Modal
+          title="Invoice Details"
+          open={detailsOpen}
+          onCancel={() => setDetailsOpen(false)}
+          onOk={() => setDetailsOpen(false)}
+          okText="Save"
+        >
+          <div className="modal-fields">
+
+            <label>
+              Customer Name
+              <Input
+                value={customer.name}
+                onChange={(e) =>
+                  setCustomer({
+                    ...customer,
+                    name: e.target.value,
+                  })
+                }
+                placeholder="Enter customer name"
+              />
+            </label>
+
+            <label>
+              Mobile Number
+              <Input
+                value={customer.mobile}
+                onChange={(e) =>
+                  setCustomer({
+                    ...customer,
+                    mobile: e.target.value,
+                  })
+                }
+                placeholder="Enter mobile number"
+                maxLength={15}
+              />
+            </label>
+
+            <label>
+              Invoice Date
+              <DatePicker
+                value={customer.date}
+                onChange={(date) =>
+                  setCustomer({
+                    ...customer,
+                    date,
+                  })
+                }
+                format="DD/MM/YYYY"
+              />
+            </label>
+
+            <label>
+              CGST %
+              <InputNumber
+                min={0}
+                max={100}
+                value={cgst}
+                onChange={(value) =>
+                  setCgst(value || 0)
+                }
+              />
+            </label>
+
+            <label>
+              SGST %
+              <InputNumber
+                min={0}
+                max={100}
+                value={sgst}
+                onChange={(value) =>
+                  setSgst(value || 0)
+                }
+              />
+            </label>
+
+            <label>
+              IGST %
+              <InputNumber
+                min={0}
+                max={100}
+                value={igst}
+                onChange={(value) =>
+                  setIgst(value || 0)
+                }
+              />
+            </label>
+
+            <label className="terms-field">
+              Terms &amp; Conditions
+
+              <Input.TextArea
+                rows={7}
+                value={terms}
+                onChange={(e) =>
+                  setTerms(e.target.value)
+                }
+                placeholder="Enter each term on a new line"
+              />
+            </label>
+
           </div>
-        </Card>
+        </Modal>
+
+        <Modal
+          title="Add Item"
+          open={itemOpen}
+          onCancel={() => setItemOpen(false)}
+          onOk={saveItem}
+          okText="Add Item"
+        >
+          <div className="modal-fields">
+
+            <label>
+              Item Name
+              <Input
+                autoFocus
+                value={draftItem.item}
+                onChange={(e) =>
+                  setDraftItem({
+                    ...draftItem,
+                    item: e.target.value,
+                  })
+                }
+              />
+            </label>
+
+            <label>
+              Quantity
+              <InputNumber
+                min={1}
+                value={draftItem.qty}
+                onChange={(value) =>
+                  setDraftItem({
+                    ...draftItem,
+                    qty: value || 0,
+                  })
+                }
+              />
+            </label>
+
+            <label>
+              Rate
+              <InputNumber
+                min={0}
+                value={draftItem.price}
+                onChange={(value) =>
+                  setDraftItem({
+                    ...draftItem,
+                    price: value || 0,
+                  })
+                }
+              />
+            </label>
+
+          </div>
+        </Modal>
+
       </div>
-
-      {/* Actions */}
-      <Space className="invoice-actions">
-        <Button icon={<PrinterOutlined />} onClick={handlePrint}>
-          Print
-        </Button>
-        <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf}>
-          Download PDF
-        </Button>
-      </Space>
     </div>
   );
 }
