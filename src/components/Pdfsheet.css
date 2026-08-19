@@ -1,0 +1,210 @@
+/* pdfSheet.css — dedicated stylesheet for the PDF-captured invoice.
+   Everything here uses FIXED px values on purpose (no %, no vw, no
+   @media queries). This is what guarantees the downloaded PDF looks
+   identical on mobile and desktop — the layout never reflows. */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+:root {
+    --paper: #fbf7ee;
+    --ink: #1e2a44;
+    --ink-soft: #5b6478;
+    --brass: #a9812f;
+    --rule: #d9d2bf;
+}
+
+.psheet {
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 780px;
+    min-height: 1103px; /* A4 aspect ratio at this width — one full page */
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    border-radius: 8px;
+    font-family: "Poppins", sans-serif;
+    color: var(--ink);
+    padding: 48px;
+}
+
+.psheet * {
+    box-sizing: border-box;
+}
+
+.psheet-watermark {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0.14;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.psheet-content {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+}
+
+.psheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.psheet-header-left {
+    width: 420px;
+}
+
+.psheet-header-right {
+    width: 300px;
+    text-align: right;
+}
+
+.psheet-logo {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    margin-bottom: 10px;
+}
+
+.psheet-org {
+    font-weight: 600;
+    font-size: 22px;
+}
+
+.psheet-contact {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    line-height: 1.7;
+}
+
+.psheet-title {
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.1;
+    color: var(--ink);
+}
+
+.psheet-sub-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-top: 2px;
+}
+
+.psheet-meta {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    line-height: 1.6;
+}
+
+.psheet-service-box {
+    margin: 20px 0;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    display: block;
+}
+
+.psheet-service-label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #000000;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.psheet-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    table-layout: fixed;
+}
+
+.psheet-table thead th {
+    text-align: left;
+    padding: 0 6px 8px;
+    border-bottom: 1.5px solid var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #000000;
+}
+
+.psheet-table tbody td {
+    padding: 9px 6px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 14px;
+    word-break: break-word;
+}
+
+.psheet-table .mono {
+    font-family: "Poppins", sans-serif;
+}
+
+.psheet-table .muted {
+    color: var(--ink-soft);
+    font-size: 13px;
+}
+
+.psheet-totals-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.psheet-total-box {
+    width: 260px;
+}
+
+.psheet-total-line {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px double var(--ink);
+    padding-top: 10px;
+    font-weight: 600;
+    font-size: 19px;
+}
+
+/* --- footer: terms & policy — pinned to the bottom of the page --- */
+.psheet-footer {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+}
+
+.psheet-footer-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brass);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.psheet-footer ul {
+    margin: 0;
+    padding-left: 18px;
+    list-style: disc;
+}
+
+.psheet-footer li {
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+}
