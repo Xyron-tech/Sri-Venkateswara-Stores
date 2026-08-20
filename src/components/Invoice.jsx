@@ -1,890 +1,237 @@
 import { useRef, useState } from "react";
-import {
-  Button,
-  DatePicker,
-  Input,
-  InputNumber,
-  Modal,
-  Space,
-} from "antd";
-
-import {
-  DeleteOutlined,
-  DownloadOutlined,
-  EditOutlined,
-  PlusOutlined,
-  PrinterOutlined,
-} from "@ant-design/icons";
-
+import { Button, Space } from "antd";
+import { DownloadOutlined, PrinterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import html2pdf from "html2pdf.js";
+import { pdf } from "@react-pdf/renderer";
 
 import "./Invoice.css";
-import JVS_LOGO from "../assets/Sri_Image.jpg";
-
-const BUSINESS = {
-  gstin: "33AEAFS2578D1Z8",
-
-  tamilName: "ஸ்ரீ வெங்கடேஸ்வரா ஸ்டோர்ஸ் & சன்ஸ்",
-
-  tamilLine:
-    "அலுமினியம், இன்டாலியம், எவர்சில்வர், பித்தளை, செம்பு, கேஸ் ஸ்டவ்,",
-
-  tamilLine2:
-    "கல்யாண சீர்வரிசை பாத்திரங்கள் மொத்தம் - சில்லறை வியாபாரம்.",
-
-  addressTamil:
-    "நெ. 30, ஆர்யபவன் எதிரில், புல்லபேட்டை, வேலூர் - 632 001.",
-
-  name: "SRI VENKATESHWARA STORES & SONS",
-
-  address: "Vellore - 632 001",
-
-  phones: [
-    "90927 16131",
-    "94427 30828",
-    "99522 22018",
-  ],
-
-  bank: {
-    accountNo: "50200108217615",
-    ifsc: "HDFC0008160",
-    bankName: "HDFC BANK LTD",
-    branch: "BAGAYAM",
-  },
-};
-
-const DEFAULT_TERMS = [
-  "Goods once sold will not be taken back.",
-  "Interest @ 24% p.a. will be charged if payment is not made within the stipulated time.",
-  'Subject to "Vellore" Jurisdiction only.',
-  "Payment should be made by NEFT / RTGS / Cheque.",
-];
-
-const DEFAULT_INVOICE = {
-  number: "426",
-  date: dayjs(),
-
-  customerName: "",
-  customerAddress: "",
-  customerMobile: "",
-  customerGstin: "",
-
-  dispatchThrough: "",
-  orderNo: "",
-  orderDate: null,
-  lrNo: "",
-
-  amountInWords: "",
-};
-
-let itemId = 1;
-
-const createItem = () => ({
-  id: itemId++,
-  item: "",
-  hsn: "",
-  qty: 1,
-  price: 0,
-});
-
-const formatAmount = (value) =>
-  Number(value || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+import { BUSINESS, DEFAULT_INVOICE, DEFAULT_TERMS, createItem } from "./invoiceData";
+import { FaWhatsapp } from "react-icons/fa";
+import InvoiceHeader from "./InvoiceHeader";
+import CustomerMeta from "./CustomerMeta";
+import ItemsTable from "./ItemsTable";
+import TotalsBank from "./TotalsBank";
+import TermsFooter from "./TermsFooter";
+import InvoicePdfDocument from "./InvoicePdfDocument";
+import WATERMARK_IMAGE from "../assets/Sri_Image.jpg";
 
 export default function Invoice() {
   const printRef = useRef(null);
 
-  const [invoice, setInvoice] =
-    useState(DEFAULT_INVOICE);
+  const [invoice, setInvoice] = useState(DEFAULT_INVOICE);
 
-  const [items, setItems] = useState([]);
+  // Start with 2 blank rows already on screen instead of an empty table —
+  // lazy initializer so createItem() only runs once on mount, not every
+  // render.
+  const [items, setItems] = useState(() => [createItem(), createItem()]);
 
-  const [cgst, setCgst] = useState(9);
-  const [sgst, setSgst] = useState(9);
-  const [igst, setIgst] = useState(0);
+  // Empty by default so the field shows a placeholder instead of a
+  // pre-filled number — user types the % they want.
+  const [cgst, setCgst] = useState("");
+  const [sgst, setSgst] = useState("");
+  const [igst, setIgst] = useState("");
+  const [terms, setTerms] = useState(DEFAULT_TERMS);
 
-  const [terms, setTerms] = useState(
-    DEFAULT_TERMS.join("\n")
-  );
-
-  const [detailsOpen, setDetailsOpen] =
-    useState(false);
-
-  const [itemOpen, setItemOpen] =
-    useState(false);
-
-  const [editingItemId, setEditingItemId] =
-    useState(null);
-
-  const [draftItem, setDraftItem] =
-    useState(createItem);
+  // PDF export now goes through @react-pdf/renderer (real vector text,
+  // exact font control) instead of html2pdf/html2canvas screenshotting the
+  // live DOM, so we no longer need to swap inputs for plain text just for
+  // export. isExporting is kept only so Print (window.print, which still
+  // screenshots the actual page) keeps looking clean.
+  const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   /* ================================
-     INVOICE CALCULATIONS
+     TOTALS
   ================================= */
 
-  const lineTotal = (item) =>
-    Number(item.qty || 0) *
-    Number(item.price || 0);
+  const lineTotal = (item) => Number(item.qty || 0) * Number(item.price || 0);
 
-  const subtotal = items.reduce(
-    (sum, item) =>
-      sum + lineTotal(item),
-    0
-  );
+  const subtotal = items.reduce((sum, item) => sum + lineTotal(item), 0);
 
-  const cgstAmount =
-    subtotal * (Number(cgst) / 100);
+  const cgstAmount = subtotal * (Number(cgst || 0) / 100);
+  const sgstAmount = subtotal * (Number(sgst || 0) / 100);
+  const igstAmount = subtotal * (Number(igst || 0) / 100);
 
-  const sgstAmount =
-    subtotal * (Number(sgst) / 100);
-
-  const igstAmount =
-    subtotal * (Number(igst) / 100);
-
-  const total =
-    subtotal +
-    cgstAmount +
-    sgstAmount +
-    igstAmount;
+  const total = subtotal + cgstAmount + sgstAmount + igstAmount;
 
   /* ================================
-     UPDATE INVOICE
+     INVOICE HEADER / META FIELDS
   ================================= */
 
-  const updateInvoice = (
-    field,
-    value
-  ) => {
-    setInvoice((current) => ({
-      ...current,
-      [field]: value,
-    }));
+  const updateInvoice = (field, value) => {
+    setInvoice((current) => ({ ...current, [field]: value }));
   };
 
   /* ================================
-     ADD ITEM
+     LINE ITEMS
+     addItem() always appends to the end of the array, so every
+     new row renders directly under the previous one in the table.
   ================================= */
 
-  const openAddItem = () => {
-    setEditingItemId(null);
-    setDraftItem(createItem());
-    setItemOpen(true);
-  };
+  const addItem = () => {
+    const newItem = createItem();
 
-  /* ================================
-     EDIT ITEM
-  ================================= */
+    setItems((current) => [...current, newItem]);
 
-  const openEditItem = (item) => {
-    setEditingItemId(item.id);
-
-    setDraftItem({
-      ...item,
+    // Focus the new row's description field once it renders.
+    requestAnimationFrame(() => {
+      const node = document.querySelector(`[data-item-desc="${newItem.id}"]`);
+      if (node) node.focus();
     });
-
-    setItemOpen(true);
   };
 
-  /* ================================
-     SAVE ITEM
-  ================================= */
-
-  const saveItem = () => {
-    const name =
-      draftItem.item.trim();
-
-    if (
-      !name ||
-      Number(draftItem.qty) <= 0
-    ) {
-      return;
-    }
-
-    const updatedItem = {
-      ...draftItem,
-      item: name,
-      hsn: draftItem.hsn || "",
-      qty: Number(
-        draftItem.qty || 0
-      ),
-      price: Number(
-        draftItem.price || 0
-      ),
-    };
-
-    if (editingItemId) {
-      setItems((current) =>
-        current.map((item) =>
-          item.id === editingItemId
-            ? updatedItem
-            : item
-        )
-      );
-    } else {
-      setItems((current) => [
-        ...current,
-        updatedItem,
-      ]);
-    }
-
-    setDraftItem(createItem());
-    setEditingItemId(null);
-    setItemOpen(false);
-  };
-
-  /* ================================
-     DELETE ITEM
-  ================================= */
-
-  const removeItem = (id) => {
+  const updateItem = (id, field, value) => {
     setItems((current) =>
-      current.filter(
-        (item) => item.id !== id
-      )
+      current.map((item) => (item.id === id ? { ...item, [field]: value } : item))
     );
   };
 
-  /* ================================
-     FONT WAIT
-  ================================= */
-
-  const waitForFonts = async () => {
-    if (!document.fonts) return;
-
-    await Promise.all([
-      document.fonts.load(
-        '400 14px "Poppins"'
-      ),
-      document.fonts.load(
-        '500 14px "Poppins"'
-      ),
-      document.fonts.load(
-        '600 14px "Poppins"'
-      ),
-      document.fonts.load(
-        '700 14px "Poppins"'
-      ),
-    ]);
-
-    await document.fonts.ready;
+  const removeItem = (id) => {
+    setItems((current) => current.filter((item) => item.id !== id));
   };
 
   /* ================================
-     DOWNLOAD PDF
+     PDF EXPORT (react-pdf — no screenshot, no font-load race,
+     no html2canvas overlap/blank-page issues)
   ================================= */
 
   const handleDownloadPdf = async () => {
-    if (!printRef.current) return;
 
-    const invoiceElement =
-      printRef.current;
+    const validItems = items.filter((item) => {
+      return (
+        item.item?.trim() ||
+        item.hsn?.trim() ||
+        Number(item.qty) > 1 ||
+        Number(item.price) > 0
+      );
+    });
 
-    invoiceElement.classList.add(
-      "pdf-export"
-    );
+    if (validItems.length === 0) {
+      alert("Please add at least one item before downloading the PDF.");
+      return;
+    }
+
+    setIsGeneratingPdf(true);
 
     try {
-      await waitForFonts();
+      const blob = await pdf(
+        <InvoicePdfDocument
+          business={BUSINESS}
+          invoice={invoice}
+          items={items}
+          cgst={cgst}
+          sgst={sgst}
+          igst={igst}
+          items={validItems}
+          cgstAmount={cgstAmount}
+          sgstAmount={sgstAmount}
+          igstAmount={igstAmount}
+          total={total}
+          terms={terms}
+        />
+      ).toBlob();
 
-      await new Promise((resolve) =>
-        requestAnimationFrame(() =>
-          requestAnimationFrame(resolve)
-        )
-      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const customerName =
+        invoice.customerName?.trim().replace(/[<>:"/\\|?*]/g, "-") || "SRI VENKATESHWARA STORES & SONS";
 
-      await html2pdf()
-        .set({
-          margin: 0,
-
-          filename:
-            `tax-invoice-${invoice.number || "invoice"}-${dayjs().format(
-              "DDMMYYYY-HHmm"
-            )}.pdf`,
-
-          image: {
-            type: "jpeg",
-            quality: 0.98,
-          },
-
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            letterRendering: true,
-
-            scrollX: 0,
-            scrollY: 0,
-
-            windowWidth:
-              invoiceElement.scrollWidth,
-          },
-
-          jsPDF: {
-            unit: "mm",
-            format: "a4",
-            orientation: "portrait",
-          },
-
-          pagebreak: {
-            mode: [
-              "avoid-all",
-              "css",
-              "legacy",
-            ],
-          },
-        })
-        .from(invoiceElement)
-        .save();
+      link.download = `${customerName}-${dayjs().format("DD-MM-YYYY")}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
-      console.error(
-        "PDF generation failed:",
-        error
-      );
+      console.error("PDF generation failed:", error);
     } finally {
-      invoiceElement.classList.remove(
-        "pdf-export"
-      );
+      setIsGeneratingPdf(false);
     }
+  };
+
+  const handleWhatsAppSend = () => {
+    let phone = invoice.customerMobile?.replace(/\D/g, "");
+
+    if (!phone) {
+      alert("Please enter customer mobile number.");
+      return;
+    }
+
+    // Indian 10-digit number
+    if (phone.length === 10) {
+      phone = `91${phone}`;
+    }
+
+    const message = `Hello ${invoice.customerName || ""},
+
+Please find your invoice details.
+
+Invoice No: ${invoice.number || "-"}
+Total Amount: ₹${total.toFixed(2)}
+
+Thank you.`;
+
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+    window.open(whatsappUrl, "_blank");
   };
 
   return (
     <div className="invoice-page">
-
       <div className="invoice-wrapper">
-
-        {/* ================================
-            EDITOR
-        ================================= */}
-
-        <div className="invoice-editor no-print">
-
-          <Button
-            icon={<EditOutlined />}
-            onClick={() =>
-              setDetailsOpen(true)
-            }
-          >
-            Invoice Details
-          </Button>
-
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={openAddItem}
-          >
-            Add Item
-          </Button>
-
-        </div>
-
-        {/* ================================
-            TAX INVOICE
-        ================================= */}
-
-        <main
-          ref={printRef}
-          className="invoice-card"
-        >
-
-          {/* ==============================
-              HEADER
-          ============================== */}
-
-          <header className="tax-header">
-
-            <div className="header-top">
-
-              <div className="gstin">
-                GSTIN : {BUSINESS.gstin}
-              </div>
-
-              <div className="tax-title">
-                TAX INVOICE
-              </div>
-
-              <div className="phone-list">
-                {BUSINESS.phones.map(
-                  (phone) => (
-                    <div key={phone}>
-                      Ph : {phone}
-                    </div>
-                  )
-                )}
-              </div>
-
-            </div>
-
-            {/* JVS LOGO
-                TAX INVOICE KEEZHA
-            */}
-
-            <div className="jvs-logo-wrapper">
-
-              <img
-                src={JVS_LOGO}
-                alt="JVS"
-                className="jvs-logo"
-              />
-
-            </div>
-
-            <div className="business-heading">
-
-              <div className="business-tamil-name">
-                {BUSINESS.tamilName}
-              </div>
-
-              <div className="business-tamil-line">
-                {BUSINESS.tamilLine}
-              </div>
-
-              <div className="business-tamil-line">
-                {BUSINESS.tamilLine2}
-              </div>
-
-              <div className="business-address-tamil">
-                {BUSINESS.addressTamil}
-              </div>
-
-              <div className="business-name">
-                {BUSINESS.name}
-              </div>
-
-              <div className="business-address">
-                {BUSINESS.address}
-              </div>
-
-            </div>
-
-          </header>
-
-          {/* ==============================
-              CUSTOMER + INVOICE DETAILS
-          ============================== */}
-
-          <section className="top-details">
-
-            <div className="customer-box">
-
-              <div className="customer-line">
-                <strong>M/s.</strong>
-
-                <span>
-                  {invoice.customerName ||
-                    " "}
-                </span>
-              </div>
-
-              <div className="customer-line address-line">
-                <strong>Address</strong>
-
-                <span>
-                  {invoice.customerAddress ||
-                    " "}
-                </span>
-              </div>
-
-              <div className="customer-line">
-                <strong>Ph.</strong>
-
-                <span>
-                  {invoice.customerMobile ||
-                    " "}
-                </span>
-              </div>
-
-              <div className="customer-line">
-                <strong>GSTIN</strong>
-
-                <span>
-                  {invoice.customerGstin ||
-                    " "}
-                </span>
-              </div>
-
-            </div>
-
-            <div className="invoice-meta-box">
-
-              <div className="meta-row">
-
-                <div>
-                  <strong>No.</strong>
-
-                  <span>
-                    {invoice.number}
-                  </span>
-                </div>
-
-                <div>
-                  <strong>Date</strong>
-
-                  <span>
-                    {invoice.date
-                      ? invoice.date.format(
-                          "DD/MM/YYYY"
-                        )
-                      : ""}
-                  </span>
-                </div>
-
-              </div>
-
-              <div className="meta-single">
-
-                <strong>
-                  Despatch thro
-                </strong>
-
-                <span>
-                  {invoice.dispatchThrough}
-                </span>
-
-              </div>
-
-              <div className="meta-row">
-
-                <div>
-                  <strong>
-                    Order No.
-                  </strong>
-
-                  <span>
-                    {invoice.orderNo}
-                  </span>
-                </div>
-
-                <div>
-                  <strong>Dated</strong>
-
-                  <span>
-                    {invoice.orderDate
-                      ? invoice.orderDate.format(
-                          "DD/MM/YYYY"
-                        )
-                      : ""}
-                  </span>
-                </div>
-
-              </div>
-
-              <div className="meta-single">
-
-                <strong>
-                  L.R. / R.R. No.
-                </strong>
-
-                <span>
-                  {invoice.lrNo}
-                </span>
-
-              </div>
-
-            </div>
-
-          </section>
-
-          {/* ==============================
-              ITEMS
-          ============================== */}
-
-          <section className="invoice-items">
-
-            <div className="invoice-table">
-
-              <div className="invoice-table-head">
-
-                <span>S.No</span>
-
-                <span>Description</span>
-
-                <span>HSN Code</span>
-
-                <span>Qty.</span>
-
-                <span>Rate</span>
-
-                <span>Amount</span>
-
-                <span className="action-column no-print">
-                  Action
-                </span>
-
-              </div>
-
-              <div className="invoice-table-body">
-
-                {items.length > 0 ? (
-                  items.map(
-                    (item, index) => (
-                      <div
-                        className="invoice-table-row"
-                        key={item.id}
-                      >
-
-                        <span>
-                          {index + 1}
-                        </span>
-
-                        <span className="description">
-                          {item.item}
-                        </span>
-
-                        <span>
-                          {item.hsn || ""}
-                        </span>
-
-                        <span className="center">
-                          {item.qty}
-                        </span>
-
-                        <span className="right">
-                          ₹{" "}
-                          {formatAmount(
-                            item.price
-                          )}
-                        </span>
-
-                        <span className="right">
-                          ₹{" "}
-                          {formatAmount(
-                            lineTotal(item)
-                          )}
-                        </span>
-
-                        <span className="item-actions action-column no-print">
-
-                          <button
-                            type="button"
-                            className="edit-item"
-                            onClick={() =>
-                              openEditItem(item)
-                            }
-                            aria-label="Edit item"
-                          >
-                            <EditOutlined />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="delete-item"
-                            onClick={() =>
-                              removeItem(item.id)
-                            }
-                            aria-label="Delete item"
-                          >
-                            <DeleteOutlined />
-                          </button>
-
-                        </span>
-
-                      </div>
-                    )
-                  )
-                ) : (
-                  <div className="invoice-empty">
-                    No items added
-                  </div>
-                )}
-
-                {/* Blank billing space */}
-                <div className="invoice-blank-space" />
-
-              </div>
-
-            </div>
-
-          </section>
-
-          {/* ==============================
-              TOTAL + BANK
-          ============================== */}
-
-          <section className="invoice-bottom">
-
-            <div className="bottom-left">
-
-              <div className="amount-words-box">
-
-                <strong>
-                  Amount Chargeable In Words
-                </strong>
-
-                <div>
-                  {invoice.amountInWords}
-                </div>
-
-              </div>
-
-              <div className="bank-box">
-
-                <strong>
-                  BANK DETAILS
-                </strong>
-
-                <div>
-                  A/c No. :{" "}
-                  {BUSINESS.bank.accountNo}
-                </div>
-
-                <div>
-                  IFSC :{" "}
-                  {BUSINESS.bank.ifsc}
-                </div>
-
-                <div>
-                  Bank :{" "}
-                  {BUSINESS.bank.bankName}
-                </div>
-
-                <div>
-                  Branch :{" "}
-                  {BUSINESS.bank.branch}
-                </div>
-
-              </div>
-
-              <div className="common-seal">
-                Common Seal
-              </div>
-
-            </div>
-
-            <div className="gst-total-box">
-
-              <div className="gst-row">
-
-                <strong>CGST</strong>
-
-                <span>
-                  {cgst}%
-                </span>
-
-                <b>
-                  ₹{" "}
-                  {formatAmount(
-                    cgstAmount
-                  )}
-                </b>
-
-              </div>
-
-              <div className="gst-row">
-
-                <strong>SGST</strong>
-
-                <span>
-                  {sgst}%
-                </span>
-
-                <b>
-                  ₹{" "}
-                  {formatAmount(
-                    sgstAmount
-                  )}
-                </b>
-
-              </div>
-
-              <div className="gst-row">
-
-                <strong>IGST</strong>
-
-                <span>
-                  {igst}%
-                </span>
-
-                <b>
-                  ₹{" "}
-                  {formatAmount(
-                    igstAmount
-                  )}
-                </b>
-
-              </div>
-
-              <div className="total-row">
-
-                <strong>
-                  TOTAL
-                </strong>
-
-                <b>
-                  ₹ {formatAmount(total)}
-                </b>
-
-              </div>
-
-              <div className="authorized-box">
-
-                <strong>
-                  For{" "}
-                  {BUSINESS.name}
-                </strong>
-
-                <div className="signature-space" />
-
-                <b>
-                  Authorised Signatory
-                </b>
-
-              </div>
-
-            </div>
-
-          </section>
-
-          {/* ==============================
-              TERMS
-          ============================== */}
-
-          <footer className="invoice-footer">
-
-            <div className="terms-box">
-
-              <div className="terms-title">
-                Terms &amp; Conditions
-              </div>
-
-              <ol>
-
-                {terms
-                  .split("\n")
-                  .filter(
-                    (term) =>
-                      term.trim()
-                  )
-                  .map(
-                    (term, index) => (
-                      <li key={index}>
-                        {term.trim()}
-                      </li>
-                    )
-                  )}
-
-              </ol>
-
-            </div>
-
-          </footer>
-
+        {/* Printable invoice */}
+        <main ref={printRef} className="invoice-card">
+          <img
+            src={WATERMARK_IMAGE}
+            alt=""
+            className="invoice-watermark"
+          />
+
+          <InvoiceHeader business={BUSINESS} />
+
+          <CustomerMeta invoice={invoice} onChange={updateInvoice} isExporting={isExporting} />
+
+          <ItemsTable
+            items={items}
+            onUpdateItem={updateItem}
+            onRemoveItem={removeItem}
+            onAddItem={addItem}
+            isExporting={isExporting}
+          />
+
+          <TotalsBank
+            business={BUSINESS}
+            amountInWords={invoice.amountInWords}
+            onAmountWordsChange={(value) => updateInvoice("amountInWords", value)}
+            cgst={cgst}
+            sgst={sgst}
+            igst={igst}
+            onCgstChange={setCgst}
+            onSgstChange={setSgst}
+            onIgstChange={setIgst}
+            cgstAmount={cgstAmount}
+            sgstAmount={sgstAmount}
+            igstAmount={igstAmount}
+            total={total}
+            isExporting={isExporting}
+          />
+
+          <TermsFooter terms={terms} onChange={setTerms} isExporting={isExporting} />
         </main>
 
-        {/* ==============================
-            ACTION BUTTONS
-        ============================== */}
-
+        {/* Actions */}
         <Space className="invoice-actions no-print">
-
           <Button
             icon={<PrinterOutlined />}
-            onClick={() =>
-              window.print()
-            }
+            onClick={() => {
+              setIsExporting(true);
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => {
+                  window.print();
+                  setIsExporting(false);
+                })
+              );
+            }}
           >
             Print
           </Button>
@@ -892,348 +239,22 @@ export default function Invoice() {
           <Button
             type="primary"
             icon={<DownloadOutlined />}
+            loading={isGeneratingPdf}
             onClick={handleDownloadPdf}
           >
             Download PDF
           </Button>
-
+          {/* <Button
+            style={{
+              background: "#299329",
+              color: "white"
+            }}
+            icon={<FaWhatsapp />}
+            onClick={handleWhatsAppSend}
+          >
+            Send WhatsApp
+          </Button> */}
         </Space>
-
-        {/* ==============================
-            INVOICE DETAILS MODAL
-        ============================== */}
-
-        <Modal
-          title="Invoice Details"
-          open={detailsOpen}
-          onCancel={() =>
-            setDetailsOpen(false)
-          }
-          onOk={() =>
-            setDetailsOpen(false)
-          }
-          okText="Save"
-          width={720}
-        >
-
-          <div className="modal-fields">
-
-            <label>
-              Invoice Number
-
-              <Input
-                value={invoice.number}
-                onChange={(e) =>
-                  updateInvoice(
-                    "number",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              Invoice Date
-
-              <DatePicker
-                value={invoice.date}
-                onChange={(date) =>
-                  updateInvoice(
-                    "date",
-                    date
-                  )
-                }
-                format="DD/MM/YYYY"
-              />
-            </label>
-
-            <label>
-              Customer Name
-
-              <Input
-                value={
-                  invoice.customerName
-                }
-                onChange={(e) =>
-                  updateInvoice(
-                    "customerName",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              Customer Mobile
-
-              <Input
-                value={
-                  invoice.customerMobile
-                }
-                onChange={(e) =>
-                  updateInvoice(
-                    "customerMobile",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label className="full-field">
-              Customer Address
-
-              <Input.TextArea
-                rows={2}
-                value={
-                  invoice.customerAddress
-                }
-                onChange={(e) =>
-                  updateInvoice(
-                    "customerAddress",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              Customer GSTIN
-
-              <Input
-                value={
-                  invoice.customerGstin
-                }
-                onChange={(e) =>
-                  updateInvoice(
-                    "customerGstin",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              Despatch Through
-
-              <Input
-                value={
-                  invoice.dispatchThrough
-                }
-                onChange={(e) =>
-                  updateInvoice(
-                    "dispatchThrough",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              Order Number
-
-              <Input
-                value={invoice.orderNo}
-                onChange={(e) =>
-                  updateInvoice(
-                    "orderNo",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              Order Date
-
-              <DatePicker
-                value={invoice.orderDate}
-                onChange={(date) =>
-                  updateInvoice(
-                    "orderDate",
-                    date
-                  )
-                }
-                format="DD/MM/YYYY"
-              />
-            </label>
-
-            <label>
-              L.R. / R.R. Number
-
-              <Input
-                value={invoice.lrNo}
-                onChange={(e) =>
-                  updateInvoice(
-                    "lrNo",
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              CGST %
-
-              <InputNumber
-                min={0}
-                max={100}
-                value={cgst}
-                onChange={(value) =>
-                  setCgst(value || 0)
-                }
-              />
-            </label>
-
-            <label>
-              SGST %
-
-              <InputNumber
-                min={0}
-                max={100}
-                value={sgst}
-                onChange={(value) =>
-                  setSgst(value || 0)
-                }
-              />
-            </label>
-
-            <label>
-              IGST %
-
-              <InputNumber
-                min={0}
-                max={100}
-                value={igst}
-                onChange={(value) =>
-                  setIgst(value || 0)
-                }
-              />
-            </label>
-
-            <label className="full-field">
-              Amount Chargeable In Words
-
-              <Input
-                value={
-                  invoice.amountInWords
-                }
-                onChange={(e) =>
-                  updateInvoice(
-                    "amountInWords",
-                    e.target.value
-                  )
-                }
-                placeholder="Enter amount in words"
-              />
-            </label>
-
-            <label className="full-field">
-              Terms &amp; Conditions
-
-              <Input.TextArea
-                rows={7}
-                value={terms}
-                onChange={(e) =>
-                  setTerms(
-                    e.target.value
-                  )
-                }
-              />
-            </label>
-
-          </div>
-
-        </Modal>
-
-        {/* ==============================
-            ADD / EDIT ITEM
-        ============================== */}
-
-        <Modal
-          title={
-            editingItemId
-              ? "Edit Item"
-              : "Add Item"
-          }
-          open={itemOpen}
-          onCancel={() => {
-            setItemOpen(false);
-            setEditingItemId(null);
-          }}
-          onOk={saveItem}
-          okText={
-            editingItemId
-              ? "Update Item"
-              : "Add Item"
-          }
-        >
-
-          <div className="modal-fields">
-
-            <label className="full-field">
-              Item Description
-
-              <Input.TextArea
-                autoFocus
-                rows={3}
-                value={draftItem.item}
-                onChange={(e) =>
-                  setDraftItem({
-                    ...draftItem,
-                    item: e.target.value,
-                  })
-                }
-              />
-            </label>
-
-            <label>
-              HSN Code
-
-              <Input
-                value={draftItem.hsn}
-                onChange={(e) =>
-                  setDraftItem({
-                    ...draftItem,
-                    hsn: e.target.value,
-                  })
-                }
-              />
-            </label>
-
-            <label>
-              Quantity
-
-              <InputNumber
-                min={1}
-                value={draftItem.qty}
-                onChange={(value) =>
-                  setDraftItem({
-                    ...draftItem,
-                    qty: value || 0,
-                  })
-                }
-              />
-            </label>
-
-            <label>
-              Rate
-
-              <InputNumber
-                min={0}
-                value={draftItem.price}
-                onChange={(value) =>
-                  setDraftItem({
-                    ...draftItem,
-                    price: value || 0,
-                  })
-                }
-              />
-            </label>
-
-          </div>
-
-        </Modal>
-
       </div>
     </div>
   );

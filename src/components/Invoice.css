@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
-
 /* =========================================================
    GLOBAL
 ========================================================= */
@@ -11,22 +9,15 @@
 .invoice-page {
   width: 100%;
   min-height: 100vh;
-
   padding: 32px 16px 50px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #eef3f0 0%,
-      #dfe8e2 100%
-    );
-
+  background: linear-gradient(135deg, #eef3f0 0%, #dfe8e2 100%);
   font-family: "Poppins", sans-serif;
 }
 
 .invoice-page,
 .invoice-page * {
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
 }
 
 .invoice-wrapper {
@@ -36,31 +27,21 @@
 }
 
 /* =========================================================
-   EDITOR
+   ADD ITEM ROW
+   Sits directly under the item table, right-aligned so it
+   lines up over the Amount / Action columns.
 ========================================================= */
 
-.invoice-editor {
+.add-item-row {
   display: flex;
   justify-content: flex-end;
-  align-items: center;
-
-  gap: 10px;
-
-  margin-bottom: 14px;
-  padding: 11px;
-
-  background: #ffffff;
-
-  border: 1px solid #d7ddd9;
-  border-radius: 8px;
-
-  box-shadow:
-    0 5px 15px rgba(15, 23, 42, 0.06);
+  margin: 10px 0 4px;
 }
 
-.invoice-editor .ant-btn {
-  height: 38px;
+.add-item-row .ant-btn {
+  height: 36px;
   border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(15, 23, 42, 0.1);
 }
 
 /* =========================================================
@@ -69,15 +50,28 @@
 
 .invoice-card {
   width: 100%;
-
   background: #ffffff;
-
   color: #111111;
-
   border: 1px solid #202020;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.14);
+   position: relative;
+}
 
-  box-shadow:
-    0 20px 45px rgba(15, 23, 42, 0.14);
+.invoice-watermark {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.invoice-card > *:not(.invoice-watermark) {
+  position: relative;
+  z-index: 1;
 }
 
 /* =========================================================
@@ -86,17 +80,11 @@
 
 .tax-header {
   position: relative;
-
   padding: 10px 13px 13px;
-
-  border-bottom: 1.5px solid #111111;
-
-  background: #ffffff;
 }
 
 .header-top {
   position: relative;
-
   min-height: 35px;
 }
 
@@ -104,10 +92,8 @@
   position: absolute;
   left: 0;
   top: 0;
-
   font-size: 12px;
   font-weight: 700;
-
   white-space: nowrap;
 }
 
@@ -115,19 +101,13 @@
   position: absolute;
   left: 50%;
   top: -2px;
-
   transform: translateX(-50%);
-
   padding: 3px 18px;
-
   background: #1e293b;
   color: #ffffff;
-
   font-size: 12px;
   font-weight: 700;
-
   letter-spacing: 0.8px;
-
   white-space: nowrap;
 }
 
@@ -135,12 +115,9 @@
   position: absolute;
   right: 0;
   top: -1px;
-
-  text-align: right;
-
+  text-align: left;
   font-size: 10px;
   font-weight: 600;
-
   line-height: 1.45;
 }
 
@@ -152,17 +129,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-
   margin-top: 4px;
   margin-bottom: 4px;
 }
 
 .jvs-logo {
   display: block;
-
   width: 58px;
   height: 58px;
-
   object-fit: contain;
 }
 
@@ -172,44 +146,37 @@
 
 .business-heading {
   text-align: center;
-
   padding: 0 20px;
 }
 
 .business-tamil-name {
   font-size: 23px;
   font-weight: 700;
-
   line-height: 1.25;
 }
 
 .business-tamil-line {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
-
   line-height: 1.45;
 }
 
 .business-address-tamil {
   margin-top: 2px;
-
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
 }
 
 .business-name {
   margin-top: 3px;
-
   font-size: 17px;
   font-weight: 700;
-
   letter-spacing: 0.2px;
 }
 
 .business-address {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
-
   color: #333333;
 }
 
@@ -220,28 +187,23 @@
 .top-details {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
-
   margin: 0 12px;
-
   border-left: 1px solid #111;
   border-right: 1px solid #111;
   border-bottom: 1px solid #111;
+  border-top: 1px solid #111;
 }
 
 .customer-box {
   min-height: 145px;
-
   border-right: 1px solid #111;
 }
 
 .customer-line {
   display: flex;
   align-items: flex-start;
-
   min-height: 36px;
-
   border-bottom: 1px solid #111;
-
   font-size: 10px;
   line-height: 1.4;
 }
@@ -253,19 +215,14 @@
 .customer-line strong {
   width: 72px;
   flex-shrink: 0;
-
   padding: 8px 7px;
-
   font-weight: 700;
 }
 
 .customer-line span {
   flex: 1;
-
   min-width: 0;
-
   padding: 8px 7px;
-
   overflow-wrap: anywhere;
 }
 
@@ -275,65 +232,163 @@
 
 .invoice-meta-box {
   min-height: 145px;
+  display: grid;
 }
 
 .meta-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-
   min-height: 36px;
-
   border-bottom: 1px solid #111;
 }
 
+/* min-width: 0 + overflow: hidden let the flex child below
+   (.meta-row span) actually shrink and ellipsis instead of
+   forcing the row wider than the grid column and overlapping
+   the next field. */
 .meta-row > div {
   display: flex;
   align-items: center;
-
   gap: 6px;
-
   min-width: 0;
-
   padding: 6px 7px;
-
   font-size: 9px;
+  overflow: hidden;
 }
 
 .meta-row > div:first-child {
   border-right: 1px solid #111;
 }
 
+/* flex: 1 (not min-content) + min-width: 0 lets long values shrink
+   to the available space; ellipsis rule below then truncates them
+   with "..." instead of overlapping the next field. */
 .meta-row span {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
 }
 
 .meta-single {
   display: flex;
   align-items: center;
-
   gap: 7px;
-
   min-height: 36px;
-
   padding: 6px 7px;
-
   border-bottom: 1px solid #111;
-
   font-size: 9px;
+  overflow: hidden;
 }
 
-.meta-single strong {
+/* Last row in the meta box — no bottom border, so it doesn't double
+   up with top-details' own border-bottom (mirrors what :last-child
+   already does for .customer-line on the left side). */
+.meta-single-LR {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 7px;
+  font-size: 9px;
+  overflow: hidden;
+}
+
+.meta-single strong,
+.meta-single-LR strong {
   white-space: nowrap;
 }
 
-.meta-single span {
+.meta-single span,
+.meta-single-LR span {
   flex: 1;
-
-  min-width: 20px;
-
+  min-width: 0;
   min-height: 17px;
+  overflow: hidden;
+}
 
-  border-bottom: 1px dotted #777;
+/* =========================================================
+   INLINE EDITABLE FIELDS
+========================================================= */
+
+.field-input {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.4;
+  resize: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: groove;
+}
+
+/* span.field-input is used during PDF export to swap out the live
+   <input>/<textarea> for plain text — needs to behave like a block
+   so it fills the cell the same way the input did. */
+span.field-input {
+  display: block;
+}
+
+.field-input::placeholder {
+  color: #9aa39d;
+  font-style: italic;
+}
+
+.field-input:focus {
+  outline: none;
+  background: #fbfdf9;
+  box-shadow: inset 0 -1.5px 0 #1e293b;
+}
+
+.field-input.center {
+  text-align: center;
+}
+
+.field-input.right {
+  text-align: right;
+}
+
+textarea.field-input {
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  text-overflow: clip;
+  height: 70px;
+  resize: vertical;
+  border-bottom: 1px solid #000;
+}
+
+/* Native number input: hide spinner arrows so it reads like plain text */
+input.field-input[type="number"]::-webkit-outer-spin-button,
+input.field-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input.field-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.percent-input {
+  width: 34px;
+  display: inline-block;
+}
+
+.ant-picker.field-picker {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ant-picker.field-picker .ant-picker-input > input {
+  font: inherit;
+  color: inherit;
 }
 
 /* =========================================================
@@ -346,36 +401,24 @@
 
 .invoice-table {
   width: 100%;
-
   border-left: 1px solid #111;
   border-right: 1px solid #111;
+  border-top: 1px solid #111;
   border-bottom: 1px solid #111;
 }
 
 .invoice-table-head,
 .invoice-table-row {
   display: grid;
-
-  grid-template-columns:
-    45px
-    minmax(0, 1fr)
-    75px
-    50px
-    88px
-    100px
-    70px;
+  grid-template-columns: 45px minmax(0, 1fr) 75px 50px 88px 100px 70px;
 }
 
 .invoice-table-head {
   min-height: 36px;
-
   background: #f2f3f3;
-
   border-bottom: 1px solid #111;
-
   font-size: 9px;
   font-weight: 700;
-
   text-transform: uppercase;
 }
 
@@ -383,11 +426,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 6px 4px;
-
   border-right: 1px solid #111;
-
   text-align: center;
 }
 
@@ -400,21 +440,16 @@
 }
 
 .invoice-table-row {
-  min-height: 42px;
-
+  min-height: 75px;
   border-bottom: 1px solid #111;
-
   font-size: 10px;
 }
 
 .invoice-table-row > span {
   display: flex;
   align-items: flex-start;
-
   min-width: 0;
-
   padding: 7px 5px;
-
   border-right: 1px solid #111;
 }
 
@@ -434,54 +469,50 @@
 
 .right {
   justify-content: flex-end;
-
   text-align: right;
-
   white-space: nowrap;
 }
 
 /* =========================================================
    BLANK BILL SPACE
+   Shrinks as real line items are added so the printed page
+   never grows taller than it needs to. No border of its own —
+   .invoice-table already closes the box with its own
+   border-bottom, so adding one here would just double it up.
+   (Reduced from 40px -> 15px: 40px was pushing total content
+   height past one A4 page, which forced html2pdf to spill a
+   near-empty second page.)
 ========================================================= */
 
 .invoice-blank-space {
-  height: 145px;
-
-  border-bottom: 1px solid #111;
+  min-height: 15px;
+  flex: 1 1 auto;
 }
 
 /* =========================================================
-   EMPTY
+   EMPTY STATE
 ========================================================= */
 
 .invoice-empty {
   min-height: 60px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 15px;
-
   color: #777777;
-
-  border-bottom: 1px solid #111;
-
   font-size: 10px;
+  text-align: center;
 }
 
 /* =========================================================
-   ACTION BUTTONS
+   ACTION BUTTONS (per row)
 ========================================================= */
 
 .item-actions {
   display: flex !important;
-
   align-items: flex-start !important;
   justify-content: center;
-
   gap: 4px;
-
   padding: 6px 3px !important;
 }
 
@@ -489,20 +520,15 @@
 .delete-item {
   width: 26px;
   height: 26px;
-
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   padding: 0;
-
   border: 0;
   border-radius: 5px;
-
   background: transparent;
-
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .edit-item {
@@ -527,76 +553,55 @@
 
 .invoice-bottom {
   display: grid;
-
   grid-template-columns: 1.15fr 1fr;
-
-  margin: 0 12px;
-
-  border-left: 1px solid #111;
-  border-right: 1px solid #111;
-  border-bottom: 1px solid #111;
+  margin: 15px 12px;
+  border: 1px solid #111;
 }
 
 .bottom-left {
   position: relative;
-
-  min-height: 245px;
-
+  min-height: 310px;
   border-right: 1px solid #111;
 }
 
 .amount-words-box {
   min-height: 65px;
-
   padding: 8px;
-
   border-bottom: 1px solid #111;
-
   font-size: 9px;
 }
 
 .amount-words-box strong {
   display: block;
-
   margin-bottom: 7px;
-
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .amount-words-box div {
   min-height: 16px;
-
   overflow-wrap: anywhere;
 }
 
 .bank-box {
   min-height: 110px;
-
   padding: 8px;
-
   border-bottom: 1px solid #111;
-
   font-size: 9px;
-
   line-height: 1.55;
 }
 
 .bank-box strong {
   display: block;
-
   margin-bottom: 3px;
-
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .common-seal {
   position: absolute;
-
-  left: 8px;
+  right: 8px;
   bottom: 8px;
-
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 /* =========================================================
@@ -605,29 +610,22 @@
 
 .gst-total-box {
   min-height: 245px;
+  display: flex;
+  flex-direction: column;
 }
 
 .gst-row {
   display: grid;
-
-  grid-template-columns:
-    80px
-    48px
-    1fr;
-
+  grid-template-columns: 80px 70px 1fr;
   min-height: 36px;
-
   border-bottom: 1px solid #111;
-
   font-size: 9px;
 }
 
 .gst-row > * {
   display: flex;
   align-items: center;
-
   padding: 6px;
-
   border-right: 1px solid #111;
 }
 
@@ -637,25 +635,19 @@
 
 .gst-row b {
   justify-content: flex-end;
-
   text-align: right;
-
   white-space: nowrap;
 }
 
 .total-row {
   display: flex;
-
   align-items: center;
   justify-content: space-between;
-
   min-height: 48px;
-
   padding: 8px;
-
   border-bottom: 1px solid #111;
-
   font-size: 13px;
+  background: #f8faf8;
 }
 
 .total-row b {
@@ -663,19 +655,16 @@
 }
 
 .authorized-box {
+  flex: 1;
   min-height: 94px;
-
   padding: 8px;
-
   text-align: center;
-
   font-size: 9px;
 }
 
 .authorized-box strong {
   display: block;
-
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .signature-space {
@@ -684,8 +673,7 @@
 
 .authorized-box b {
   display: block;
-
-  font-size: 9px;
+  font-size: 11px;
 }
 
 /* =========================================================
@@ -693,11 +681,8 @@
 ========================================================= */
 
 .invoice-footer {
-  margin: 0 12px;
-
-  border-left: 1px solid #111;
-  border-right: 1px solid #111;
-  border-bottom: 1px solid #111;
+  margin: 0 12px 15px;
+  border: 1px solid #111;
 }
 
 .terms-box {
@@ -706,23 +691,14 @@
 
 .terms-title {
   margin-bottom: 4px;
-
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
 }
 
-.terms-box ol {
-  margin: 0;
-
-  padding-left: 18px;
-
-  font-size: 8px;
-
-  line-height: 1.45;
-}
-
-.terms-box li {
-  padding-left: 2px;
+.terms-edit {
+  min-height: 90px;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 /* =========================================================
@@ -731,55 +707,25 @@
 
 .invoice-actions {
   display: flex;
-
   justify-content: flex-end;
-
   margin-top: 18px;
 }
 
 .invoice-actions .ant-btn {
   height: 38px;
-
   border-radius: 6px;
 }
 
 /* =========================================================
-   MODAL
-========================================================= */
-
-.modal-fields {
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-
-  gap: 14px;
-}
-
-.modal-fields label {
-  display: flex;
-  flex-direction: column;
-
-  gap: 5px;
-
-  color: #475569;
-
-  font-size: 12px;
-}
-
-.modal-fields .ant-input,
-.modal-fields .ant-input-number,
-.modal-fields .ant-picker {
-  width: 100%;
-}
-
-.full-field {
-  grid-column: 1 / -1;
-}
-
-/* =========================================================
    PDF EXPORT
-   ACTION COLUMN + ITS CONTENT COMPLETELY REMOVED
+   html2pdf/html2canvas ignores @media print, so anything that
+   must vanish from the exported PDF (Add Item, per-row delete
+   button, etc.) needs an explicit rule here, not just .no-print.
 ========================================================= */
+
+.pdf-export .no-print {
+  display: none !important;
+}
 
 .pdf-export .action-column {
   display: none !important;
@@ -787,16 +733,19 @@
 
 .pdf-export .invoice-table-head,
 .pdf-export .invoice-table-row {
-  grid-template-columns:
-    45px
-    minmax(0, 1fr)
-    75px
-    50px
-    88px
-    100px;
+  grid-template-columns: 45px minmax(0, 1fr) 75px 50px 88px 100px;
 }
 
 .pdf-export .invoice-card {
+  box-shadow: none;
+}
+
+.pdf-export .field-input::placeholder {
+  color: transparent;
+}
+
+.pdf-export .field-input:focus {
+  background: transparent;
   box-shadow: none;
 }
 
@@ -807,7 +756,6 @@
 @media print {
   @page {
     size: A4 portrait;
-
     margin: 0;
   }
 
@@ -815,29 +763,23 @@
   body {
     margin: 0 !important;
     padding: 0 !important;
-
     background: #ffffff !important;
   }
 
   .invoice-page {
     min-height: auto !important;
-
     padding: 0 !important;
-
     background: #ffffff !important;
   }
 
   .invoice-wrapper {
     max-width: none !important;
-
     width: 100% !important;
   }
 
   .invoice-card {
     width: 100% !important;
-
     border: 0 !important;
-
     box-shadow: none !important;
   }
 
@@ -851,13 +793,11 @@
 
   .invoice-table-head,
   .invoice-table-row {
-    grid-template-columns:
-      45px
-      minmax(0, 1fr)
-      75px
-      50px
-      88px
-      100px;
+    grid-template-columns: 45px minmax(0, 1fr) 75px 50px 88px 100px;
+  }
+
+  .field-input::placeholder {
+    color: transparent;
   }
 }
 
@@ -892,54 +832,71 @@
   }
 
   .invoice-bottom {
-    grid-template-columns:
-      1fr 0.9fr;
+    grid-template-columns: 1fr 0.9fr;
   }
 }
 
 /* =========================================================
    MOBILE
+   Text bumped up from the original tiny 7–9px values so the
+   invoice is comfortably readable on a phone, not just visible.
 ========================================================= */
 
 @media (max-width: 600px) {
+  .invoice-page,
+  .invoice-page * {
+    font-size: 13px;
+  }
+
   .invoice-page {
     padding: 10px 4px 30px;
   }
 
-  .invoice-editor {
-    justify-content: stretch;
-
-    padding: 8px;
-  }
-
-  .invoice-editor .ant-btn {
-    flex: 1;
-
-    padding: 0 8px;
-
-    font-size: 12px;
+  .add-item-row .ant-btn {
+    padding: 0 12px;
+    font-size: 13px;
   }
 
   .tax-header {
-    padding: 8px 8px 11px;
+    padding: 10px 10px 12px;
   }
 
+  /* Absolute-positioned 3-column header (GSTIN | badge | phones) has no
+     room to breathe on a phone — stack them instead so nothing overlaps. */
   .header-top {
-    min-height: 31px;
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-height: auto;
   }
 
   .gstin {
-    font-size: 8px;
+    position: static;
+    order: 1;
+    text-align: center;
+    white-space: normal;
+    font-size: 10.5px;
   }
 
   .tax-title {
-    font-size: 8px;
-
-    padding: 2px 8px;
+    position: static;
+    order: 2;
+    left: auto;
+    top: auto;
+    transform: none;
+    font-size: 10.5px;
+    padding: 3px 10px;
   }
 
   .phone-list {
-    font-size: 7px;
+    position: static;
+    order: 3;
+    right: auto;
+    top: auto;
+    text-align: center;
+    font-size: 10px;
   }
 
   .jvs-logo {
@@ -952,23 +909,23 @@
   }
 
   .business-tamil-name {
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .business-tamil-line {
-    font-size: 7px;
+    font-size: 9.5px;
   }
 
   .business-address-tamil {
-    font-size: 7px;
+    font-size: 12px;
   }
 
   .business-name {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .business-address {
-    font-size: 7px;
+    font-size: 9.5px;
   }
 
   /* Customer section */
@@ -979,16 +936,21 @@
 
   .customer-box {
     border-right: 0;
-
     border-bottom: 1px solid #111;
   }
 
   .customer-line {
-    font-size: 9px;
+    font-size: 11.5px;
   }
 
   .invoice-meta-box {
     min-height: auto;
+  }
+
+  .meta-row > div,
+  .meta-single,
+  .meta-single-LR {
+    font-size: 11px;
   }
 
   /* Table */
@@ -999,7 +961,6 @@
 
   .invoice-table {
     overflow-x: auto;
-
     -webkit-overflow-scrolling: touch;
   }
 
@@ -1008,24 +969,48 @@
     min-width: 690px;
   }
 
+  .invoice-table-head {
+    font-size: 11px;
+  }
+
+  .invoice-table-row {
+    font-size: 12px;
+  }
+
   /* Bottom */
 
   .invoice-bottom {
     grid-template-columns: 1fr;
-
-    margin: 0 8px;
+    margin: 15px 8px;
   }
 
   .bottom-left {
     border-right: 0;
-
     border-bottom: 1px solid #111;
+  }
+
+  .amount-words-box,
+  .bank-box {
+    font-size: 11px;
+  }
+
+  .amount-words-box strong,
+  .bank-box strong {
+    font-size: 12px;
+  }
+
+  .gst-row {
+    font-size: 11px;
   }
 
   /* Footer */
 
   .invoice-footer {
-    margin: 0 8px;
+    margin: 0 8px 15px;
+  }
+
+  .terms-edit {
+    font-size: 11px;
   }
 
   /* Actions */
@@ -1038,16 +1023,6 @@
   .invoice-actions .ant-btn {
     width: 100%;
   }
-
-  /* Modal */
-
-  .modal-fields {
-    grid-template-columns: 1fr;
-  }
-
-  .full-field {
-    grid-column: auto;
-  }
 }
 
 /* =========================================================
@@ -1055,27 +1030,50 @@
 ========================================================= */
 
 @media (max-width: 380px) {
+  .invoice-page,
+  .invoice-page * {
+    font-size: 12px;
+  }
+
   .gstin {
-    font-size: 7px;
+    font-size: 9px;
   }
 
   .phone-list {
-    font-size: 6.5px;
+    font-size: 8.5px;
   }
 
   .tax-title {
-    font-size: 7px;
+    font-size: 9px;
   }
 
   .business-tamil-name {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .business-name {
-    font-size: 10px;
+    font-size: 12px;
   }
 
-  .invoice-editor .ant-btn {
-    font-size: 10px;
+  .add-item-row .ant-btn {
+    font-size: 11px;
+  }
+}
+
+@media (max-width:450px) {
+    .invoice-actions{
+        flex-direction: column;
+    }
+    
+}
+@media print {
+  .invoice-watermark {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    opacity: 0.08;
+    pointer-events: none;
   }
 }
