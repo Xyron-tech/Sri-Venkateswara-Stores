@@ -1,6 +1,6 @@
 import { Page, View, Text, Image, Document, StyleSheet } from "@react-pdf/renderer";
-import { registerInvoiceFonts } from "./pdfFonts";
-import { formatAmount } from "./invoiceData";
+import { registerInvoiceFonts } from "./pdffonts";
+import { formatAmount } from "./invoicedata";
 import JVS_LOGO from "../assets/Sri_Image.jpg";
 import WATERMARK_IMAGE from "../assets/Sri_Image.jpg";
 

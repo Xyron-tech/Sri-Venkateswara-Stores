@@ -1,15 +1,7 @@
 import { Font } from "@react-pdf/renderer";
 
-// Fonts are registered from remote URLs (verified working) instead of local
-// files under src/assets/fonts/ — this avoids the "Failed to resolve import"
-// build error you get if a local font file is missing or misnamed. react-pdf
-// fetches these once when the PDF is generated and caches them.
-
 let registered = false;
 
-// react-pdf throws if Font.register runs twice for the same family in some
-// versions / during hot-reload — guard so this is safe to import from
-// multiple places.
 export function registerInvoiceFonts() {
   if (registered) return;
   registered = true;

@@ -5,7 +5,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Invoice />} />
-      {/* <Route path="/preview" element={<PdfGenerate />} /> */}
     </Routes>
   )
 }

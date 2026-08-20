@@ -5,14 +5,14 @@ import dayjs from "dayjs";
 import { pdf } from "@react-pdf/renderer";
 
 import "./Invoice.css";
-import { BUSINESS, DEFAULT_INVOICE, DEFAULT_TERMS, createItem } from "./invoiceData";
+import { BUSINESS, DEFAULT_INVOICE, DEFAULT_TERMS, createItem } from "./Invoicedata";
 import { FaWhatsapp } from "react-icons/fa";
-import InvoiceHeader from "./InvoiceHeader";
-import CustomerMeta from "./CustomerMeta";
-import ItemsTable from "./ItemsTable";
-import TotalsBank from "./TotalsBank";
-import TermsFooter from "./TermsFooter";
-import InvoicePdfDocument from "./InvoicePdfDocument";
+import InvoiceHeader from "./Invoiceheader";
+import CustomerMeta from "./Customermeta";
+import ItemsTable from "./Itemstable";
+import TotalsBank from "./Totalsbank";
+import TermsFooter from "./Termsfooter";
+import InvoicePdfDocument from "./Invoicepdfdocument";
 import WATERMARK_IMAGE from "../assets/Sri_Image.jpg";
 
 export default function Invoice() {
