@@ -1,6 +1,6 @@
 import { Button } from "antd";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { formatAmount } from "./invoicedata";
+import { formatAmount } from "./Invoicedata";
 
 export default function ItemsTable({
   items,

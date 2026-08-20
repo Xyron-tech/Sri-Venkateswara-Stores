@@ -1,4 +1,4 @@
-import { formatAmount } from "./invoicedata";
+import { formatAmount } from "./Invoicedata";
 import { toWords } from "number-to-words";
 import { useEffect } from "react";
 
